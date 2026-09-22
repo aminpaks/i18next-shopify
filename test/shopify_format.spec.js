@@ -2,6 +2,105 @@ import i18next from 'i18next';
 
 import ShopifyFormat from '../src';
 
+const unsafeValue = '<&>"\'/';
+const escapedValue = '&lt;&amp;&gt;&quot;&#39;&#x2F;';
+
+async function createI18next(options = {}) {
+  const instance = i18next.createInstance();
+
+  await instance.use(ShopifyFormat).init({
+    lng: 'en',
+    resources: {
+      en: {
+        translation: {
+          single: 'Hello {name}!',
+          double: 'Hello {{name}}!',
+          nested: {
+            greeting: 'Hello {{name}}!',
+          },
+        },
+      },
+    },
+    ...options,
+  });
+
+  return instance;
+}
+
+describe('escaping', () => {
+  it('escapes single and double mustache interpolations by default', async () => {
+    const instance = await createI18next();
+
+    expect(instance.t('single', {name: unsafeValue})).toBe(
+      `Hello ${escapedValue}!`,
+    );
+    expect(instance.t('double', {name: unsafeValue})).toBe(
+      `Hello ${escapedValue}!`,
+    );
+  });
+
+  it('honors global and per-call escapeValue overrides', async () => {
+    const instance = await createI18next({
+      interpolation: {escapeValue: false},
+    });
+
+    expect(instance.t('double', {name: unsafeValue})).toBe(
+      `Hello ${unsafeValue}!`,
+    );
+    expect(
+      instance.t('double', {
+        name: unsafeValue,
+        interpolation: {escapeValue: true},
+      }),
+    ).toBe(`Hello ${escapedValue}!`);
+  });
+
+  it('keeps the global escapeValue when per-call options omit it', async () => {
+    const instance = await createI18next({
+      interpolation: {escapeValue: false},
+    });
+
+    expect(
+      instance.t('double', {
+        name: unsafeValue,
+        interpolation: {prefix: '{{', suffix: '}}'},
+      }),
+    ).toBe(`Hello ${unsafeValue}!`);
+  });
+
+  it('uses a custom interpolation escape function', async () => {
+    const instance = await createI18next({
+      interpolation: {escape: (value) => `[${value}]`},
+    });
+
+    expect(instance.t('double', {name: 'Shopify'})).toBe('Hello [Shopify]!');
+  });
+
+  it('uses the local escape fallback without an i18next instance', () => {
+    const format = new ShopifyFormat();
+
+    expect(format.parse('Hello {{name}}!', {name: unsafeValue})).toBe(
+      `Hello ${escapedValue}!`,
+    );
+  });
+
+  it('escapes strings inside interpolation arrays', async () => {
+    const instance = await createI18next();
+
+    expect(
+      instance.t('single', {name: [unsafeValue, 'Shopify']}),
+    ).toStrictEqual(['Hello ', escapedValue, 'Shopify', '!']);
+  });
+
+  it('escapes nested returnObjects values', async () => {
+    const instance = await createI18next();
+
+    expect(
+      instance.t('nested', {name: unsafeValue, returnObjects: true}),
+    ).toStrictEqual({greeting: `Hello ${escapedValue}!`});
+  });
+});
+
 describe('shopify format', () => {
   describe('addLookupKeys', () => {
     beforeEach(() => {

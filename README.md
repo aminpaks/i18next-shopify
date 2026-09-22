@@ -14,6 +14,7 @@ Key features include:
 ## Table of contents
 [Getting Started](#getting-started)\
 [Example](#example)\
+[HTML escaping](#html-escaping)\
 [License](#license)\
 [Contributing](#contributing)\
 [References](#references)
@@ -69,6 +70,18 @@ i18next.use(ShopifyFormat).init({
 i18next.t("hello", { casualName: "Shopify" }); // -> Hello Shopify!
 i18next.t("products", { count: 2 }); // -> I have 2 products!
 ```
+
+## HTML escaping
+
+Interpolated string values escape HTML by default, matching i18next behavior.
+
+If translated output always renders as React text, use i18next's standard opt-out to avoid double escaping:
+
+```js
+interpolation: {escapeValue: false}
+```
+
+Do not use that global opt-out when translated output can reach raw HTML or another unsafe rendering sink. Use a per-call opt-out only for proven React-text paths.
 
 ## License
 

@@ -1,8 +1,23 @@
 import React from 'react';
 
-import {replaceValue} from '../src/utils';
+import {escape, escapeInterpolationValue, replaceValue} from '../src/utils';
 
 describe('Utils', () => {
+  describe('escape', () => {
+    it('escapes i18next HTML entities', () => {
+      expect(escape('<&>"\'/')).toBe('&lt;&amp;&gt;&quot;&#39;&#x2F;');
+    });
+
+    it('escapes strings inside arrays without changing React elements', () => {
+      const element = React.createElement('strong', {key: 'name'}, 'Shopify');
+
+      expect(escapeInterpolationValue(['<&>', element], escape)).toStrictEqual([
+        '&lt;&amp;&gt;',
+        element,
+      ]);
+    });
+  });
+
   describe('replaceValue', () => {
     it('replaces a string with a single level of interpolation', () => {
       expect(replaceValue('Hello, {{name}}!', '{{name}}', 'John')).toBe(
@@ -45,6 +60,16 @@ describe('Utils', () => {
     it('replaces a string with a regular expression', () => {
       expect(replaceValue('Hello, {{name}}!', /{{name}}/, 'John')).toBe(
         'Hello, John!',
+      );
+    });
+
+    it.each([
+      ['$&', 'A $& B'],
+      ["$'", "A $' B"],
+      ['$`', 'A $` B'],
+    ])('inserts %s literally', (replacement, expected) => {
+      expect(replaceValue('A {{name}} B', '{{name}}', replacement)).toBe(
+        expected,
       );
     });
   });

@@ -1,5 +1,14 @@
 import {isValidElement, cloneElement} from 'react';
 
+const ENTITY_MAP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+  '/': '&#x2F;',
+};
+
 const arr = [];
 const each = arr.forEach;
 
@@ -15,6 +24,26 @@ export function defaults(obj, ...args) {
     }
   });
   return obj;
+}
+
+export function escape(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  return value.replace(/[&<>"'/]/g, (character) => ENTITY_MAP[character]);
+}
+
+export function escapeInterpolationValue(value, escapeValue) {
+  if (typeof value === 'string') {
+    return escapeValue(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => escapeInterpolationValue(item, escapeValue));
+  }
+
+  return value;
 }
 
 /**
@@ -45,7 +74,7 @@ export function replaceValue(interpolated, pattern, replacement) {
       }
 
       // interpolated and replacement are primitives
-      return interpolated.replace(pattern, replacement);
+      return interpolated.replace(pattern, () => replacement);
     }
 
     case 'object':

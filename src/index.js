@@ -52,6 +52,8 @@ class ShopifyFormat {
       return res;
     }
 
+    const {escapeValue, escape} = this.escapingConfig(options);
+
     let interpolated = res;
     matches.forEach((match) => {
       const interpolationKey = match.replace(MUSTACHE_FORMAT, '$1');
@@ -73,9 +75,37 @@ class ShopifyFormat {
         );
       }
 
-      interpolated = utils.replaceValue(interpolated, match, value ?? '');
+      value = value ?? '';
+      if (escapeValue) {
+        value = utils.escapeInterpolationValue(value, escape);
+      }
+
+      interpolated = utils.replaceValue(interpolated, match, value);
     });
     return interpolated;
+  }
+
+  escapingConfig(options) {
+    const interpolator = this.i18next?.services?.interpolator;
+    const perCall = options?.interpolation;
+
+    let escapeValue = true;
+    if (interpolator?.escapeValue !== undefined) {
+      escapeValue = interpolator.escapeValue;
+    }
+    if (perCall?.escapeValue !== undefined) {
+      escapeValue = perCall.escapeValue;
+    }
+
+    let escape = utils.escape;
+    if (interpolator?.escape !== undefined) {
+      escape = interpolator.escape;
+    }
+    if (perCall?.escape !== undefined) {
+      escape = perCall.escape;
+    }
+
+    return {escapeValue, escape};
   }
 
   // Add any other locations that should be searched first for an answer to the lookup
