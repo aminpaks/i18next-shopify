@@ -74,6 +74,13 @@ describe('escaping', () => {
     });
 
     expect(instance.t('double', {name: 'Shopify'})).toBe('Hello [Shopify]!');
+    expect(instance.t('double', {name: 42})).toBe('Hello [42]!');
+    expect(instance.t('double', {name: [42, 'Shopify']})).toStrictEqual([
+      'Hello ',
+      '[42]',
+      '[Shopify]',
+      '!',
+    ]);
   });
 
   it('uses the local escape fallback without an i18next instance', () => {
@@ -84,12 +91,15 @@ describe('escaping', () => {
     );
   });
 
-  it('escapes strings inside interpolation arrays', async () => {
+  it('escapes scalar values inside interpolation arrays', async () => {
     const instance = await createI18next();
 
-    expect(
-      instance.t('single', {name: [unsafeValue, 'Shopify']}),
-    ).toStrictEqual(['Hello ', escapedValue, 'Shopify', '!']);
+    expect(instance.t('single', {name: [unsafeValue, 7]})).toStrictEqual([
+      'Hello ',
+      escapedValue,
+      '7',
+      '!',
+    ]);
   });
 
   it('escapes nested returnObjects values', async () => {

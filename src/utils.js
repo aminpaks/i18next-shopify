@@ -35,8 +35,13 @@ export function escape(value) {
 }
 
 export function escapeInterpolationValue(value, escapeValue) {
-  if (typeof value === 'string') {
-    return escapeValue(value);
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return escapeValue(String(value));
   }
 
   if (Array.isArray(value)) {

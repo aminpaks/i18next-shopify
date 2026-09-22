@@ -8,13 +8,25 @@ describe('Utils', () => {
       expect(escape('<&>"\'/')).toBe('&lt;&amp;&gt;&quot;&#39;&#x2F;');
     });
 
-    it('escapes strings inside arrays without changing React elements', () => {
+    it('escapes scalar values inside arrays without changing React elements', () => {
       const element = React.createElement('strong', {key: 'name'}, 'Shopify');
 
-      expect(escapeInterpolationValue(['<&>', element], escape)).toStrictEqual([
-        '&lt;&amp;&gt;',
-        element,
-      ]);
+      expect(
+        escapeInterpolationValue(['<&>', 7, element], escape),
+      ).toStrictEqual(['&lt;&amp;&gt;', '7', element]);
+    });
+  });
+
+  describe('escapeInterpolationValue', () => {
+    it.each([
+      [42, '[42]'],
+      [true, '[true]'],
+      [BigInt(1), '[1]'],
+    ])('stringifies %p before custom escaping', (value, expected) => {
+      const customEscape = jest.fn((escapedValue) => `[${escapedValue}]`);
+
+      expect(escapeInterpolationValue(value, customEscape)).toBe(expected);
+      expect(customEscape).toHaveBeenCalledWith(String(value));
     });
   });
 
